@@ -1,0 +1,46 @@
+# =============================================================================
+# TERRAFORM VARIABLES EXAMPLE
+# =============================================================================
+# Copy this file to terraform.tfvars and customize your values
+# cp terraform.tfvars.example terraform.tfvars
+
+# =============================================================================
+# REQUIRED CONFIGURATION
+# =============================================================================
+
+project_name = "my-dev-server"
+environment  = "dev"
+owner        = "your-name"
+
+# =============================================================================
+# AWS CONFIGURATION
+# =============================================================================
+
+aws_region = "eu-west-3"  # Paris region
+
+# =============================================================================
+# EC2 CONFIGURATION
+# =============================================================================
+
+instance_type = "t3a.large"    # 2 vCPUs, 8GB RAM
+dev_username  = "dev"          # Custom development user
+
+# =============================================================================
+# STORAGE CONFIGURATION
+# =============================================================================
+
+root_volume_size = 30          # GB
+root_volume_type = "gp3"       # Latest generation
+
+# =============================================================================
+# OPTIONAL SETTINGS
+# =============================================================================
+
+# Availability zones (default: ["eu-west-3a", "eu-west-3b"])
+# availability_zones = ["eu-west-3a", "eu-west-3b", "eu-west-3c"]
+
+# Additional tags
+# additional_tags = {
+#   Department = "Engineering"
+#   CostCenter = "Development"
+# }

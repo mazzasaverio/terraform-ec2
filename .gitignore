@@ -1,0 +1,106 @@
+# =============================================================================
+# TERRAFORM FILES
+# =============================================================================
+
+# Terraform state files (CRITICAL - never commit these!)
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Terraform variable files (contains secrets)
+terraform.tfvars
+*.auto.tfvars
+
+# Terraform directories
+.terraform/
+.terraform.d/
+
+# Terraform plan files
+*.tfplan
+tfplan*
+
+# Terraform lock file (comment out if you want to commit it)
+.terraform.lock.hcl
+
+# =============================================================================
+# SSH KEYS AND SECRETS
+# =============================================================================
+
+# SSH private keys (CRITICAL - never commit these!)
+*.pem
+*.key
+id_rsa*
+*.ppk
+
+# AWS credentials
+.aws/
+
+# =============================================================================
+# ENVIRONMENT AND CONFIG FILES
+# =============================================================================
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# =============================================================================
+# BACKUP AND TEMP FILES
+# =============================================================================
+
+# Backup files
+*.bak
+*.backup
+backups/
+
+# Log files
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# =============================================================================
+# OS AND IDE FILES
+# =============================================================================
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
