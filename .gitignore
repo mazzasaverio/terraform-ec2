@@ -1,63 +1,104 @@
 # =============================================================================
-# TERRAFORM FILES
+# PROJECT-WIDE GITIGNORE
 # =============================================================================
 
-# Terraform state files (CRITICAL - never commit these!)
+# =============================================================================
+# ENVIRONMENT FILES
+# =============================================================================
+.env
+.env.*
+!.env.example
+
+# =============================================================================
+# TERRAFORM FILES (from infrastructure/)
+# =============================================================================
 *.tfstate
 *.tfstate.*
 *.tfstate.backup
-
-# Terraform variable files (contains secrets)
 terraform.tfvars
 *.auto.tfvars
-
-# Terraform directories
 .terraform/
 .terraform.d/
-
-# Terraform plan files
 *.tfplan
 tfplan*
-
-# Terraform lock file (comment out if you want to commit it)
 .terraform.lock.hcl
+
+# =============================================================================
+# PYTHON FILES (from backend/)
+# =============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# uv
+uv.lock
+
+# =============================================================================
+# DOCKER FILES
+# =============================================================================
+.dockerignore
 
 # =============================================================================
 # SSH KEYS AND SECRETS
 # =============================================================================
-
-# SSH private keys (CRITICAL - never commit these!)
 *.pem
 *.key
 id_rsa*
 *.ppk
-
-# AWS credentials
 .aws/
 
 # =============================================================================
-# ENVIRONMENT AND CONFIG FILES
+# DATA AND LOGS
 # =============================================================================
+data/input/*
+data/output/*
+data/temp/*
+!data/input/.gitkeep
+!data/output/.gitkeep
+!data/temp/.gitkeep
 
-# Environment variables
-.env
-.env.local
-.env.*.local
+*.log
+logs/
 
 # =============================================================================
 # BACKUP AND TEMP FILES
 # =============================================================================
-
-# Backup files
 *.bak
 *.backup
 backups/
-
-# Log files
-*.log
-logs/
-
-# Temporary files
 *.tmp
 *.temp
 
@@ -71,8 +112,6 @@ logs/
 ._*
 .Spotlight-V100
 .Trashes
-ehthumbs.db
-Thumbs.db
 
 # Windows
 Thumbs.db
@@ -93,14 +132,17 @@ Desktop.ini
 # Vim
 *.swp
 *.swo
-*~
 
-# Emacs
-*~
-\#*\#
-/.emacs.desktop
-/.emacs.desktop.lock
-*.elc
-auto-save-list
-tramp
-.\#*
+# JetBrains
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# =============================================================================
+# PROJECT SPECIFIC
+# =============================================================================
+
+# Temporary deployment files
+/tmp/
+*.tar.gz 
