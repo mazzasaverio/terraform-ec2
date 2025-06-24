@@ -33,7 +33,12 @@ Questo backend fa parte di un sistema full-stack che include:
 backend/
 ├── src/
 │   ├── __init__.py
-│   └── main.py          # FastAPI application
+│   ├── main.py          # FastAPI application
+│   └── utils/           # Utility modules
+│       ├── __init__.py
+│       ├── logging_manager.py  # Centralized logging manager
+│       ├── example_usage.py    # Usage examples
+│       └── README.md           # Utils documentation
 ├── tests/
 │   ├── __init__.py
 │   └── test_api.py      # Test suite
@@ -47,6 +52,16 @@ backend/
 ├── .env.example        # Environment template
 └── README.md           # This file
 ```
+
+### Logging System
+
+Il backend utilizza un sistema di logging centralizzato tramite `LoggingManager`:
+
+- **Console Output**: Log colorati per sviluppo
+- **Error Logs**: `logs/error.log` per errori e criticità
+- **Debug Logs**: `logs/debug.log` (solo in modalità debug)
+- **App Logs**: `logs/app.log` per log specifici dell'applicazione
+- **Rotazione Automatica**: Gestione automatica dimensioni e retention
 
 ## 🔧 Development Setup
 

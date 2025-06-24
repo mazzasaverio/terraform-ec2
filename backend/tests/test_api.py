@@ -1,6 +1,11 @@
 import pytest
 from fastapi.testclient import TestClient
 from src.main import app
+from src.utils.logging_manager import LoggingManager
+
+# Configure logging for tests
+LoggingManager.configure_logging(level="INFO", debug=False)
+logger = LoggingManager.get_logger("tests")
 
 client = TestClient(app)
 

@@ -1,25 +1,25 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any
-from loguru import logger
 from datetime import datetime
 import os
 
-# Configure Loguru
+from .utils.logging_manager import LoggingManager
+
+# Configure logging using the centralized manager
 log_level = os.getenv("LOG_LEVEL", "INFO")
-logger.remove()  # Remove default handler
-logger.add(
-    "/app/logs/app.log",
+debug_mode = os.getenv("DEBUG", "false").lower() == "true"
+LoggingManager.configure_logging(level=log_level, debug=debug_mode)
+
+# Add app-specific log handler
+LoggingManager.add_file_handler(
+    "logs/app.log",
+    level=log_level,
     rotation="10 MB",
-    retention="30 days",
-    level=log_level,
-    format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {name}:{function}:{line} | {message}",
+    retention="30 days"
 )
-logger.add(
-    lambda msg: print(msg, end=""),  # Console output
-    level=log_level,
-    format="<green>{time:HH:mm:ss}</green> | <level>{level}</level> | <cyan>{name}:{function}:{line}</cyan> | {message}",
-)
+
+logger = LoggingManager.get_logger("main")
 
 # Create FastAPI app
 app = FastAPI(
