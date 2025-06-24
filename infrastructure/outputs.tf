@@ -51,6 +51,30 @@ output "public_subnet_ids" {
 }
 
 # =============================================================================
+# S3 OUTPUTS
+# =============================================================================
+
+output "app_bucket_name" {
+  description = "Name of the application data S3 bucket"
+  value       = module.s3.app_bucket_name
+}
+
+output "app_bucket_arn" {
+  description = "ARN of the application data S3 bucket"
+  value       = module.s3.app_bucket_arn
+}
+
+output "logs_bucket_name" {
+  description = "Name of the logs S3 bucket"
+  value       = module.s3.logs_bucket_name
+}
+
+output "logs_bucket_arn" {
+  description = "ARN of the logs S3 bucket"
+  value       = module.s3.logs_bucket_arn
+}
+
+# =============================================================================
 # ECR OUTPUTS
 # =============================================================================
 
@@ -88,11 +112,11 @@ output "aws_account_id" {
 # =============================================================================
 
 output "ec2_iam_role_arn" {
-  description = "ARN of the EC2 IAM role for ECR access"
-  value       = module.ecr.iam_role_arn
+  description = "ARN of the EC2 IAM role for S3 access"
+  value       = module.s3.instance_profile_arn
 }
 
 output "ec2_instance_profile_name" {
   description = "Name of the EC2 instance profile"
-  value       = module.ecr.instance_profile_name
+  value       = module.s3.instance_profile_name
 }

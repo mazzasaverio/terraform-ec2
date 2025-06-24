@@ -30,6 +30,17 @@ module "vpc" {
 }
 
 # =============================================================================
+# S3 MODULE
+# =============================================================================
+
+module "s3" {
+  source = "./modules/s3"
+
+  name_prefix = local.name_prefix
+  tags        = local.common_tags
+}
+
+# =============================================================================
 # ECR MODULE
 # =============================================================================
 
@@ -51,7 +62,7 @@ module "ec2" {
   vpc_id                    = module.vpc.vpc_id
   public_subnet_ids         = module.vpc.public_subnet_ids
   ssh_public_key            = var.ssh_public_key
-  iam_instance_profile_name = module.ecr.instance_profile_name
+  iam_instance_profile_name = module.s3.instance_profile_name
 
   tags = local.common_tags
 }

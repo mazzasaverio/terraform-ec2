@@ -1,6 +1,6 @@
 # 🔐 Terraform EC2 + FastAPI - Secure Full-Stack Deployment
 
-Modern, secure full-stack setup with **Terraform infrastructure** + **FastAPI backend** deployed on AWS EC2 with **SSH keys stored safely outside Terraform state**.
+Modern, secure full-stack setup with **Terraform infrastructure** + **FastAPI backend** deployed on AWS EC2 with **SSH keys stored safely outside Terraform state** and **S3 storage integration**.
 
 ## 🔒 Security Features
 
@@ -9,6 +9,7 @@ Modern, secure full-stack setup with **Terraform infrastructure** + **FastAPI ba
 - **🔐 Automatic Security Checks** - Built-in validation to prevent key leaks
 - **📝 Secure Outputs** - No sensitive data exposed in outputs
 - **🐳 Containerized Backend** - FastAPI runs in Docker with health checks
+- **🗄️ S3 Storage Integration** - Secure cloud storage with IAM roles
 
 ## 🎯 What You Get
 
@@ -17,6 +18,8 @@ Modern, secure full-stack setup with **Terraform infrastructure** + **FastAPI ba
 - **💻 EC2 Instance (t3a.large)** - Development server with Docker pre-installed
 - **🔐 Security Groups** - Configured for SSH, HTTP, HTTPS, and development ports
 - **🗄️ Encrypted Storage** - 30GB gp3 SSD with encryption
+- **📦 S3 Buckets** - Application data and logs storage with lifecycle policies
+- **🔑 IAM Roles** - Secure access to S3 and ECR services
 
 ### **Backend (FastAPI)**
 - **🚀 FastAPI Application** - Modern Python API with automatic docs
@@ -24,6 +27,7 @@ Modern, secure full-stack setup with **Terraform infrastructure** + **FastAPI ba
 - **📝 Loguru Logging** - File + console logging with rotation
 - **🔄 Auto-restart** - Container restarts automatically
 - **🏥 Health Checks** - Built-in monitoring endpoints
+- **📦 S3 Integration** - File upload/download and storage management
 
 ## ⚡ Quick Start (Complete Deployment)
 
@@ -37,16 +41,90 @@ aws configure
 # 2. Setup infrastructure
 cd infrastructure
 make ssh-keys      # Generate secure SSH keys
-make apply         # Deploy AWS infrastructure
+make apply         # Deploy AWS infrastructure (includes S3)
 
-# 3. Deploy backend via ECR
-cd ../backend
+# 3. Setup S3 storage
+cd ..
+./scripts/setup-s3.sh  # Configure S3 access and sync scripts
+
+# 4. Deploy backend via ECR
+cd backend
 ./deploy-simple.sh # Deploy FastAPI to EC2 via ECR
 
-# 4. Verify deployment
+# 5. Verify deployment
 cd ..
 make status        # Check everything is running
 ```
+
+## 📦 S3 Storage Setup
+
+### **Quick S3 Setup**
+```bash
+# Run the S3 setup script
+./scripts/setup-s3.sh
+
+# This will:
+# ✅ Test S3 connectivity
+# ✅ Create directory structure
+# ✅ Generate sync scripts
+# ✅ Create configuration files
+```
+
+### **S3 Bucket Structure**
+```
+s3://your-project-dev-app-data-xxxxxxxx/
+├── data/
+│   ├── input/          # Input files
+│   ├── output/         # Processed results
+│   ├── temp/           # Temporary files
+│   └── logs/           # Application logs
+```
+
+### **Local S3 Operations**
+```bash
+# Sync local data to S3
+./sync-s3.sh up
+
+# Sync S3 data to local
+./sync-s3.sh down
+
+# Sync logs to S3
+./sync-s3.sh logs
+```
+
+### **EC2 S3 Operations**
+```bash
+# SSH to EC2
+ssh -i .ssh/terraform-ec2-key ubuntu@$(terraform output -raw instance_public_ip)
+
+# Test S3 access
+s3-test
+
+# Sync data
+s3-sync up
+s3-sync down
+s3-sync logs
+```
+
+### **FastAPI S3 Endpoints**
+```bash
+# Get authentication token
+curl -X POST "http://YOUR_IP:8000/auth/login" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=admin&password=admin123"
+
+# List S3 files
+curl -X GET "http://YOUR_IP:8000/s3/files?data_type=input" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Upload file
+curl -X POST "http://YOUR_IP:8000/s3/upload" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -F "file=@local-file.txt" \
+  -F "data_type=input"
+```
+
+**📖 For detailed S3 setup instructions, see [S3_SETUP.md](S3_SETUP.md)**
 
 ## 🔐 Secure SSH Management
 
@@ -67,13 +145,19 @@ cd infrastructure
 make apply
 ```
 
-### **Step 3: Deploy FastAPI Backend**
+### **Step 3: Setup S3 Storage**
+```bash
+cd ..
+./scripts/setup-s3.sh
+```
+
+### **Step 4: Deploy FastAPI Backend**
 ```bash
 cd backend
 ./deploy-simple.sh
 ```
 
-### **Step 4: Access Your Application**
+### **Step 5: Access Your Application**
 ```bash
 # Get your instance IP
 cd infrastructure
@@ -145,6 +229,14 @@ make test           # Run tests
 ./deploy-simple.sh  # Deploy to EC2 via ECR
 ```
 
+### **📦 S3 Storage Commands:**
+```bash
+./scripts/setup-s3.sh  # Setup S3 access and scripts
+./sync-s3.sh up        # Sync local data to S3
+./sync-s3.sh down      # Sync S3 data to local
+./sync-s3.sh logs      # Sync logs to S3
+```
+
 ### **🛠️ Utility Commands:**
 ```bash
 make ssh            # SSH into EC2 instance
@@ -169,12 +261,30 @@ curl -X POST http://$IP:8000/messages \
   -d '{"content": "Hello World!"}'       # Create message
 ```
 
-### **2. 📋 Interactive Documentation**
+### **2. 📦 S3 Storage Tests**
+```bash
+# Test S3 connectivity
+curl -X GET "http://$IP:8000/s3/health" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# List S3 files
+curl -X GET "http://$IP:8000/s3/files?data_type=input" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Upload test file
+echo "test content" > test.txt
+curl -X POST "http://$IP:8000/s3/upload" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -F "file=@test.txt" \
+  -F "data_type=input"
+```
+
+### **3. 📋 Interactive Documentation**
 Open in browser:
 - **Swagger UI:** http://YOUR_IP:8000/docs
 - **ReDoc:** http://YOUR_IP:8000/redoc
 
-### **3. 📊 Monitoring**
+### **4. 📊 Monitoring**
 ```bash
 # Container status
 make ssh
@@ -184,6 +294,9 @@ docker logs simple-backend
 # System resources
 htop
 df -h
+
+# S3 access from EC2
+s3-test
 ```
 
 ## 💾 VM Management (Start/Stop to Save Costs)

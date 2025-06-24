@@ -1,13 +1,14 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from pydantic import BaseModel
-from typing import Dict, Any
+from typing import Dict, Any, List
 from datetime import datetime, timedelta
 import os
 
 from .utils.logging_manager import LoggingManager
 from .utils.auth import create_access_token, verify_token, authenticate_user
+from .utils.s3_manager import S3Manager, upload_data_file, list_data_files, download_data_file
 
 # Configure logging using the centralized manager
 log_level = os.getenv("LOG_LEVEL", "INFO")
@@ -60,6 +61,19 @@ class Token(BaseModel):
     token_type: str
 
 
+class S3FileInfo(BaseModel):
+    key: str
+    size: int
+    last_modified: datetime
+    etag: str
+
+
+class S3UploadResponse(BaseModel):
+    success: bool
+    s3_key: str
+    message: str
+
+
 # In-memory storage for testing
 messages_store: Dict[int, Dict[str, Any]] = {}
 next_id = 1
@@ -72,7 +86,7 @@ async def root():
     return {
         "message": "Simple Backend API",
         "version": "0.1.0",
-        "endpoints": ["/", "/health", "/messages", "/messages/{message_id}"],
+        "endpoints": ["/", "/health", "/messages", "/messages/{message_id}", "/s3/files", "/s3/upload"],
     }
 
 
@@ -168,6 +182,130 @@ async def delete_message(message_id: int, token_data: dict = Depends(verify_toke
     logger.info(f"Message deleted: {message_id}")
 
     return {"message": "Message deleted", "deleted": deleted_message}
+
+
+# S3 endpoints
+@app.get("/s3/files", response_model=List[S3FileInfo])
+async def list_s3_files(data_type: str = "input", token_data: dict = Depends(verify_token)):
+    """List files in S3 bucket (requires authentication)"""
+    logger.info(f"Listing S3 files for type: {data_type} (user: {token_data['sub']})")
+    
+    try:
+        files = list_data_files(data_type)
+        return [
+            S3FileInfo(
+                key=file_info["Key"],
+                size=file_info["Size"],
+                last_modified=file_info["LastModified"],
+                etag=file_info["ETag"].strip('"')
+            )
+            for file_info in files
+        ]
+    except Exception as e:
+        logger.error(f"Failed to list S3 files: {e}")
+        raise HTTPException(status_code=500, detail="Failed to list S3 files")
+
+
+@app.post("/s3/upload", response_model=S3UploadResponse)
+async def upload_file_to_s3(
+    file: UploadFile = File(...),
+    data_type: str = "input",
+    token_data: dict = Depends(verify_token)
+):
+    """Upload a file to S3 (requires authentication)"""
+    logger.info(f"Uploading file to S3: {file.filename} (user: {token_data['sub']})")
+    
+    try:
+        # Save uploaded file temporarily
+        temp_path = f"/tmp/{file.filename}"
+        with open(temp_path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
+        
+        # Upload to S3
+        s3_key = upload_data_file(temp_path, data_type)
+        
+        # Clean up temp file
+        os.remove(temp_path)
+        
+        if s3_key:
+            logger.info(f"File uploaded successfully: {s3_key}")
+            return S3UploadResponse(
+                success=True,
+                s3_key=s3_key,
+                message="File uploaded successfully"
+            )
+        else:
+            raise HTTPException(status_code=500, detail="Failed to upload file to S3")
+            
+    except Exception as e:
+        logger.error(f"Failed to upload file: {e}")
+        raise HTTPException(status_code=500, detail="Failed to upload file")
+
+
+@app.get("/s3/download/{s3_key:path}")
+async def download_file_from_s3(s3_key: str, token_data: dict = Depends(verify_token)):
+    """Download a file from S3 (requires authentication)"""
+    logger.info(f"Downloading file from S3: {s3_key} (user: {token_data['sub']})")
+    
+    try:
+        s3_manager = S3Manager()
+        object_data = s3_manager.get_object(s3_key)
+        
+        if not object_data:
+            raise HTTPException(status_code=404, detail="File not found in S3")
+        
+        return {
+            "s3_key": s3_key,
+            "size": object_data["ContentLength"],
+            "content_type": object_data.get("ContentType", "application/octet-stream"),
+            "last_modified": object_data["LastModified"],
+            "download_url": s3_manager.get_object_url(s3_key)
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get file info: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get file info")
+
+
+@app.delete("/s3/files/{s3_key:path}")
+async def delete_file_from_s3(s3_key: str, token_data: dict = Depends(verify_token)):
+    """Delete a file from S3 (requires authentication)"""
+    logger.info(f"Deleting file from S3: {s3_key} (user: {token_data['sub']})")
+    
+    try:
+        s3_manager = S3Manager()
+        if s3_manager.delete_object(s3_key):
+            return {"message": "File deleted successfully", "s3_key": s3_key}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to delete file from S3")
+            
+    except Exception as e:
+        logger.error(f"Failed to delete file: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete file")
+
+
+@app.get("/s3/health")
+async def s3_health_check(token_data: dict = Depends(verify_token)):
+    """Check S3 connectivity (requires authentication)"""
+    logger.info(f"S3 health check (user: {token_data['sub']})")
+    
+    try:
+        s3_manager = S3Manager()
+        bucket_info = s3_manager.get_bucket_info()
+        return {
+            "s3_status": bucket_info["status"],
+            "bucket_name": bucket_info["bucket_name"],
+            "region": bucket_info["region"],
+            "timestamp": datetime.now()
+        }
+    except Exception as e:
+        logger.error(f"S3 health check failed: {e}")
+        return {
+            "s3_status": "error",
+            "error": str(e),
+            "timestamp": datetime.now()
+        }
 
 
 if __name__ == "__main__":

@@ -131,6 +131,7 @@ resource "aws_instance" "dev_server" {
 
   user_data = base64encode(templatefile("${path.module}/user-data.sh", {
     aws_region = data.aws_region.current.name
+    name_prefix = var.name_prefix
   }))
 
   root_block_device {
