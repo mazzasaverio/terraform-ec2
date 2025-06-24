@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   backend:
     build:
@@ -9,8 +11,13 @@ services:
       - .env
     environment:
       - ENVIRONMENT=development
+      - DATABASE_URL=${DATABASE_URL}
     volumes:
       - ./src:/app/src # Hot reload for development
       - ../data:/app/data # Mount data directory
       - ./logs:/app/logs # Mount logs directory
-    command: uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+    command: >
+      sh -c "
+        alembic upgrade head &&
+        uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+      "
