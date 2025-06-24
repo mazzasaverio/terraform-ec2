@@ -48,8 +48,8 @@ make ssh-keys
 ```
 
 This creates:
-- `infrastructure/.ssh/terraform-ec2-key` (private key - stays local)
-- `infrastructure/.ssh/terraform-ec2-key.pub` (public key)
+- `../.ssh/terraform-ec2-key` (private key - stays local in root)
+- `../.ssh/terraform-ec2-key.pub` (public key)
 - `ssh_public_key.auto.tfvars` (Terraform variable file)
 
 ### **Step 2: Deploy Infrastructure**
@@ -63,7 +63,7 @@ make apply
 make ec2-connect
 
 # Or manual connection
-ssh -i .ssh/terraform-ec2-key ubuntu@$(terraform output -raw instance_public_ip)
+ssh -i ../.ssh/terraform-ec2-key ubuntu@$(terraform output -raw instance_public_ip)
 ```
 
 ## 🔒 Security Validation

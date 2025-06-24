@@ -102,9 +102,6 @@ uv run pytest tests/ -v
 Dal **root del progetto**:
 
 ```bash
-# Deploy completo (infrastruttura + backend)
-make deploy
-
 # Solo backend (se infrastruttura già esistente)
 make deploy-backend
 
@@ -121,14 +118,13 @@ Se vuoi deployare solo il backend:
 
 ```bash
 cd backend
-chmod +x deploy.sh
-./deploy.sh
+./deploy-simple.sh
 ```
 
 Lo script:
-1. Estrae l'IP dell'istanza EC2 da Terraform
-2. Copia i file necessari via SCP
-3. Avvia i container Docker sull'EC2
+1. Builda l'immagine Docker localmente
+2. Autentica con ECR e pusha l'immagine
+3. SSH nell'EC2 e deploya via ECR
 4. Verifica il health check
 
 ## 🧪 Testing
@@ -234,7 +230,7 @@ Il backend è progettato per integrarsi facilmente con sistemi CI/CD:
 
 1. **Build**: `docker build -t backend .`
 2. **Test**: `uv run pytest`
-3. **Deploy**: `./deploy.sh` (richiede Terraform output)
+3. **Deploy**: `./deploy-simple.sh` (richiede Terraform output)
 
 ## 📈 Performance
 
@@ -273,7 +269,7 @@ make status
 make infra-ssh-keys
 
 # Deploy manuale
-cd backend && ./deploy.sh
+cd backend && ./deploy-simple.sh
 ```
 
 **Logs non visibili:**

@@ -27,32 +27,23 @@ Modern, secure full-stack setup with **Terraform infrastructure** + **FastAPI ba
 
 ## ⚡ Quick Start (Complete Deployment)
 
-### **🚀 Option 1: Full Automatic Deployment**
+### **🔧 Step-by-Step Deployment**
 ```bash
 # 1. Clone and setup
 git clone <your-repo>
 cd terraform-ec2
 aws configure
 
-# 2. Deploy everything (infrastructure + backend)
-make deploy
-
-# 3. Test your API
-curl http://$(cd infrastructure && terraform output -raw instance_public_ip):8000/
-```
-
-### **🔧 Option 2: Step-by-Step Deployment**
-```bash
-# 1. Setup infrastructure
+# 2. Setup infrastructure
 cd infrastructure
 make ssh-keys      # Generate secure SSH keys
 make apply         # Deploy AWS infrastructure
 
-# 2. Deploy backend
+# 3. Deploy backend via ECR
 cd ../backend
-./deploy.sh        # Deploy FastAPI to EC2
+./deploy-simple.sh # Deploy FastAPI to EC2 via ECR
 
-# 3. Verify deployment
+# 4. Verify deployment
 cd ..
 make status        # Check everything is running
 ```
@@ -66,8 +57,8 @@ make ssh-keys
 ```
 
 **Creates:**
-- `infrastructure/.ssh/terraform-ec2-key` (private key - stays local)
-- `infrastructure/.ssh/terraform-ec2-key.pub` (public key)
+- `.ssh/terraform-ec2-key` (private key - stays local in root)
+- `.ssh/terraform-ec2-key.pub` (public key)
 - `ssh_public_key.auto.tfvars` (Terraform variable file)
 
 ### **Step 2: Deploy Infrastructure**
@@ -79,7 +70,7 @@ make apply
 ### **Step 3: Deploy FastAPI Backend**
 ```bash
 cd backend
-./deploy.sh
+./deploy-simple.sh
 ```
 
 ### **Step 4: Access Your Application**
@@ -111,7 +102,7 @@ make security-check
 
 ### **🚀 Main Deployment Commands:**
 ```bash
-make deploy          # Deploy infrastructure + backend automatically
+make deploy-backend  # Deploy backend via ECR
 make status          # Show deployment status and URLs
 make destroy         # Destroy everything (cleanup)
 make clean           # Clean local Docker resources
@@ -151,7 +142,7 @@ cd backend/
 make dev            # Run locally for development
 make build          # Build Docker image
 make test           # Run tests
-./deploy.sh         # Deploy to EC2
+./deploy-simple.sh  # Deploy to EC2 via ECR
 ```
 
 ### **🛠️ Utility Commands:**

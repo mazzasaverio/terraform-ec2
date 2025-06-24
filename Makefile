@@ -10,13 +10,19 @@ BLUE := \033[34m
 PURPLE := \033[35m
 RESET := \033[0m
 
+# SSH key paths (now in root directory)
+SSH_KEY_DIR := .ssh
+SSH_KEY_NAME := terraform-ec2-key
+SSH_PRIVATE_KEY := $(SSH_KEY_DIR)/$(SSH_KEY_NAME)
+SSH_PUBLIC_KEY := $(SSH_PRIVATE_KEY).pub
+
 # Default target
 .DEFAULT_GOAL := help
 
 # =============================================================================
 # PHONY TARGETS
 # =============================================================================
-.PHONY: help deploy deploy-infra deploy-backend destroy status clean ssh logs test-local test-remote check-prerequisites
+.PHONY: help deploy-infra deploy-backend destroy status clean ssh logs test-local test-remote check-prerequisites
 
 # =============================================================================
 # HELP
@@ -46,7 +52,6 @@ help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## 🛠️.*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(GREEN)%-20s$(RESET) %s\n", $$1, $$2}' | sed 's/🛠️ //'
 	@echo ""
 	@echo "$(BLUE)📋 Quick Start:$(RESET)"
-	@echo "  $(GREEN)make deploy$(RESET)          # Deploy everything (secure)"
 	@echo "  $(GREEN)make status$(RESET)          # Show deployment status"
 	@echo "  $(GREEN)make test-remote$(RESET)     # Test the deployed API"
 	@echo "  $(GREEN)make destroy$(RESET)         # Clean up everything"
@@ -75,17 +80,6 @@ check-prerequisites: ## 🛠️ Check all prerequisites
 # MAIN DEPLOYMENT COMMANDS
 # =============================================================================
 
-deploy: check-prerequisites ## 🚀 Deploy full stack (infrastructure + backend)
-	@echo "$(PURPLE)🚀 Starting secure full-stack deployment...$(RESET)"
-	@echo "$(GREEN)🔐 Using secure SSH key management (keys NOT in Terraform state)$(RESET)"
-	@$(MAKE) deploy-infra
-	@echo "$(YELLOW)⏳ Waiting for EC2 instance to be fully ready...$(RESET)"
-	@sleep 30
-	@$(MAKE) deploy-backend
-	@$(MAKE) status
-	@echo ""
-	@echo "$(GREEN)🎉 Full deployment completed successfully!$(RESET)"
-
 deploy-infra: check-prerequisites ## 🏗️ Deploy only infrastructure
 	@echo "$(BLUE)🏗️ Deploying infrastructure with Terraform...$(RESET)"
 	@if [ ! -f "infrastructure/terraform.tfvars" ]; then \
@@ -99,13 +93,18 @@ deploy-infra: check-prerequisites ## 🏗️ Deploy only infrastructure
 	@echo "$(GREEN)✅ Infrastructure deployed successfully$(RESET)"
 
 deploy-backend: ## 🐍 Deploy only backend (requires existing infrastructure)
-	@echo "$(BLUE)🐍 Deploying FastAPI backend...$(RESET)"
-	@if [ ! -f "backend/deploy.sh" ]; then \
-		echo "$(RED)❌ backend/deploy.sh not found$(RESET)"; \
+	@echo "$(BLUE)🐍 Deploying FastAPI backend via ECR...$(RESET)"
+	@if [ ! -f "backend/deploy-simple.sh" ]; then \
+		echo "$(RED)❌ backend/deploy-simple.sh not found$(RESET)"; \
 		exit 1; \
 	fi
-	@cd backend && chmod +x deploy.sh && ./deploy.sh
-	@echo "$(GREEN)✅ Backend deployed successfully$(RESET)"
+	@if [ ! -f "$(SSH_PRIVATE_KEY)" ]; then \
+		echo "$(RED)❌ SSH key not found at $(SSH_PRIVATE_KEY)$(RESET)"; \
+		echo "$(YELLOW)💡 Run: make infra-ssh-keys$(RESET)"; \
+		exit 1; \
+	fi
+	@cd backend && ./deploy-simple.sh
+	@echo "$(GREEN)✅ Backend deployed successfully via ECR$(RESET)"
 
 destroy: ## 🚀 Destroy all infrastructure
 	@echo "$(RED)💥 Destroying infrastructure...$(RESET)"
@@ -229,10 +228,10 @@ status: ## 🛠️ Show deployment status
 			echo "  curl http://$$EC2_IP:8000/health"; \
 			echo ""; \
 			echo "$(YELLOW)🔗 SSH Access:$(RESET)"; \
-			echo "  ssh -i infrastructure/.ssh/terraform-ec2-key ubuntu@$$EC2_IP"; \
+			echo "  ssh -i .ssh/terraform-ec2-key ubuntu@$$EC2_IP"; \
 			echo ""; \
 			echo "$(YELLOW)📊 Monitor Container:$(RESET)"; \
-			echo "  ssh -i infrastructure/.ssh/terraform-ec2-key ubuntu@$$EC2_IP 'docker logs simple-backend -f'"; \
+			echo "  ssh -i .ssh/terraform-ec2-key ubuntu@$$EC2_IP 'docker logs simple-backend -f'"; \
 		else \
 			echo "$(RED)❌ Infrastructure: Not deployed$(RESET)"; \
 		fi; \
@@ -246,12 +245,12 @@ ssh: ## 🛠️ SSH into EC2 instance
 		echo "$(RED)❌ No EC2 instance found$(RESET)"; \
 		exit 1; \
 	fi; \
-	if [ ! -f "infrastructure/.ssh/terraform-ec2-key" ]; then \
+	if [ ! -f "$(SSH_PRIVATE_KEY)" ]; then \
 		echo "$(RED)❌ SSH key not found. Run: make infra-ssh-keys$(RESET)"; \
 		exit 1; \
 	fi; \
 	echo "$(YELLOW)🔗 Connecting to $$EC2_IP...$(RESET)"; \
-	ssh -i infrastructure/.ssh/terraform-ec2-key -o StrictHostKeyChecking=no ubuntu@$$EC2_IP
+	ssh -i $(SSH_PRIVATE_KEY) -o StrictHostKeyChecking=no ubuntu@$$EC2_IP
 
 logs: ## 🛠️ Show backend container logs
 	@EC2_IP=$$(cd infrastructure && terraform output -raw instance_public_ip 2>/dev/null || echo ""); \
@@ -259,12 +258,12 @@ logs: ## 🛠️ Show backend container logs
 		echo "$(RED)❌ No EC2 instance found$(RESET)"; \
 		exit 1; \
 	fi; \
-	if [ ! -f "infrastructure/.ssh/terraform-ec2-key" ]; then \
+	if [ ! -f "$(SSH_PRIVATE_KEY)" ]; then \
 		echo "$(RED)❌ SSH key not found. Run: make infra-ssh-keys$(RESET)"; \
 		exit 1; \
 	fi; \
 	echo "$(YELLOW)📊 Showing container logs...$(RESET)"; \
-	ssh -i infrastructure/.ssh/terraform-ec2-key -o StrictHostKeyChecking=no ubuntu@$$EC2_IP 'docker logs simple-backend -f'
+	ssh -i $(SSH_PRIVATE_KEY) -o StrictHostKeyChecking=no ubuntu@$$EC2_IP 'docker logs simple-backend -f'
 
 clean: ## 🛠️ Clean up local Docker resources
 	@echo "$(YELLOW)🧹 Cleaning up local resources...$(RESET)"
@@ -300,4 +299,4 @@ open-docs: ## 🛠️ Open API documentation in browser
 		exit 1; \
 	fi; \
 	echo "$(YELLOW)🌐 Opening http://$$EC2_IP:8000/docs$(RESET)"; \
-	xdg-open http://$$EC2_IP:8000/docs 2>/dev/null || open http://$$EC2_IP:8000/docs 2>/dev/null || echo "$(YELLOW)💡 Open manually: http://$$EC2_IP:8000/docs$(RESET)" 
+	xdg-open http://$$EC2_IP:8000/docs 2>/dev/null || open http://$$EC2_IP:8000/docs 2>/dev/null || echo "$(YELLOW)💡 Open manually: http://$$EC2_IP:8000/docs$(RESET)"

@@ -2,6 +2,9 @@
 # EC2 MODULE - SIMPLIFIED DEVELOPMENT SERVER
 # =============================================================================
 
+# Data source for current AWS region
+data "aws_region" "current" {}
+
 # Data source to get the latest Ubuntu AMI
 data "aws_ami" "ubuntu" {
   most_recent = true
@@ -116,44 +119,32 @@ locals {
 # EC2 INSTANCE
 # =============================================================================
 
-resource "aws_instance" "dev" {
-  ami           = var.ami_id != "" ? var.ami_id : data.aws_ami.ubuntu.id
-  instance_type = var.instance_type
-  key_name      = aws_key_pair.main.key_name
+resource "aws_instance" "dev_server" {
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = var.instance_type
+  key_name               = aws_key_pair.main.key_name
+  vpc_security_group_ids = [aws_security_group.dev.id]
+  subnet_id              = var.public_subnet_ids[0]
 
-  # Use first public subnet
-  subnet_id = var.public_subnet_ids[0]
+  # IAM instance profile for ECR access
+  iam_instance_profile = var.iam_instance_profile_name
 
-  vpc_security_group_ids      = [aws_security_group.dev.id]
-  associate_public_ip_address = true
+  user_data = base64encode(templatefile("${path.module}/user-data.sh", {
+    aws_region = data.aws_region.current.name
+  }))
 
-  user_data                   = local.user_data
-  user_data_replace_on_change = true
-
-  # Root volume configuration
   root_block_device {
-    volume_type           = var.root_volume_type
+    volume_type           = "gp3"
     volume_size           = var.root_volume_size
     delete_on_termination = true
-    encrypted             = var.root_volume_encrypted
+    encrypted             = true
 
     tags = merge(var.tags, {
-      Name = "${var.name_prefix}-dev-volume"
-      Type = "RootVolume"
+      Name = "${var.name_prefix}-root-volume"
     })
   }
 
-  # Instance tags
   tags = merge(var.tags, {
     Name = "${var.name_prefix}-dev-server"
-    Type = "DevelopmentServer"
   })
-
-  # Lifecycle management
-  lifecycle {
-    create_before_destroy = true
-    ignore_changes = [
-      ami, # Ignore AMI changes
-    ]
-  }
 }

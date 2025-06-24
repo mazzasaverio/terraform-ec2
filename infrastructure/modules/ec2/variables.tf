@@ -101,3 +101,9 @@ variable "root_volume_encrypted" {
   type        = bool
   default     = true
 }
+
+variable "iam_instance_profile_name" {
+  description = "IAM instance profile name for EC2"
+  type        = string
+  default     = null
+}

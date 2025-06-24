@@ -4,22 +4,22 @@
 
 output "instance_id" {
   description = "ID of the EC2 instance"
-  value       = aws_instance.dev.id
+  value       = aws_instance.dev_server.id
 }
 
 output "instance_public_ip" {
   description = "Public IP address of the EC2 instance"
-  value       = aws_instance.dev.public_ip
+  value       = aws_instance.dev_server.public_ip
 }
 
 output "instance_public_dns" {
   description = "Public DNS name of the EC2 instance"
-  value       = aws_instance.dev.public_dns
+  value       = aws_instance.dev_server.public_dns
 }
 
 output "instance_private_ip" {
   description = "Private IP address of the EC2 instance"
-  value       = aws_instance.dev.private_ip
+  value       = aws_instance.dev_server.private_ip
 }
 
 output "security_group_id" {
@@ -34,10 +34,10 @@ output "key_name" {
 
 output "ssh_connection_command" {
   description = "SSH command to connect to the instance using the generated private key"
-  value       = "ssh -i .ssh/terraform-ec2-key ubuntu@${aws_instance.dev.public_ip}"
+  value       = "ssh -i .ssh/terraform-ec2-key ubuntu@${aws_instance.dev_server.public_ip}"
 }
 
 output "ami_id" {
   description = "AMI ID used for the instance"
-  value       = var.ami_id != "" ? var.ami_id : data.aws_ami.ubuntu.id
+  value       = data.aws_ami.ubuntu.id
 }

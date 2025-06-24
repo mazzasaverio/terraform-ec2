@@ -12,8 +12,8 @@ YELLOW := \033[33m
 BLUE := \033[34m
 RESET := \033[0m
 
-# SSH key paths
-SSH_KEY_DIR := .ssh
+# SSH key paths (now in parent directory)
+SSH_KEY_DIR := ../.ssh
 SSH_KEY_NAME := terraform-ec2-key
 SSH_PRIVATE_KEY := $(SSH_KEY_DIR)/$(SSH_KEY_NAME)
 SSH_PUBLIC_KEY := $(SSH_PRIVATE_KEY).pub
@@ -59,6 +59,7 @@ help: ## Show this help message
 
 ssh-keys: ## 🔐 Generate secure SSH keys (outside Terraform state)
 	@echo "$(BLUE)🔑 Generating secure SSH keys...$(RESET)"
+	@mkdir -p $(SSH_KEY_DIR)
 	@./scripts/generate-ssh-keys.sh
 	@echo "$(GREEN)✅ SSH keys generated securely!$(RESET)"
 
